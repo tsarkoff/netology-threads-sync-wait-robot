@@ -2,35 +2,31 @@ import java.util.*;
 
 public class Main {
     private static final int ROUTES_NUMBER = 1_000;
-    private static final String TURNS = "RLRFR";
     private static final Map<Long, Integer> sizeToFreq = new HashMap<>();
-    private static int turnRightAccurance;
 
     public static void main(String[] args) throws InterruptedException {
-        List<Thread> threads = new ArrayList<>();
+        // Поток подсчета максимальных частот "Правых Поворотов" и вывода их на экран
+        Thread printThread = new PrintThread(sizeToFreq);
+        printThread.start();
+
+        // Потоки генерации 10_000 маршрутов и подсчет частот появления "Правых Поворотов" (R)
+        List<Thread> calcThreads = new ArrayList<>();
         for (int threadNo = 0; threadNo < ROUTES_NUMBER; threadNo++) {
-            threads.add(
-                    new Thread(
-                            () -> {
-                                String route = generateRoute(TURNS, 100);
-                                long turnRightFrequency = route.chars().filter(ch -> ch == 'R').count();
-                                synchronized (sizeToFreq) {
-                                    turnRightAccurance = sizeToFreq.containsKey(turnRightFrequency) ? ++turnRightAccurance : 1;
-                                    sizeToFreq.put(turnRightFrequency, turnRightAccurance);
-                                }
-                            }
-                    ));
-            threads.getLast().start();
+            calcThreads.add(new CalculateRightTurnsFrequencyThread(sizeToFreq));
+            calcThreads.getLast().start();
         }
 
-        for (Thread thread : threads) { thread.join(); }
+        for (Thread thread : calcThreads) {
+            thread.join();
+        }
+        printThread.interrupt();
 
-        //System.out.println(sizeToFreq);
         TreeMap<Long, Integer> sizeToFreqSorted = new SizeToFreqSorted<>(sizeToFreq);
-        System.out.printf("Самое частое количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastKey(), sizeToFreqSorted.lastEntry().getValue());
         System.out.println(sizeToFreqSorted);
+        System.out.printf("Самое частое количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastKey(), sizeToFreqSorted.lastEntry().getValue());
     }
 
+    // Метод генерации маршрута
     public static String generateRoute(String letters, int length) {
         Random random = new Random();
         StringBuilder route = new StringBuilder();

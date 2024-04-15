@@ -4,8 +4,8 @@ public class Main {
     private static final int ROUTES_NUMBER = 1_000;
     private static final String TURNS = "RLRFR";
     private static final int TURNS_COUNT = 100;
-    private static final Map<Long, Integer> sizeToFreq = new HashMap<>();
-    private static int turnRightCount;
+    private static final Map<Long, Long> sizeToFreq = new HashMap<>();
+    private static long turnRightCount;
     private static Thread printThread;
 
     public static void main(String[] args) throws InterruptedException {
@@ -15,22 +15,15 @@ public class Main {
                 synchronized (sizeToFreq) {
                     try {
                         sizeToFreq.wait();
-                        // !!!!!! Почему этот закомментированный КОД НИЖЕ - НЕ РАБОТАЕТ ??? Ведь это локальный TreeMap...
-                        // TreeMap<Long, Integer> sizeToFreqSorted = new SizeToFreqSorted<>(sizeToFreq);
-                        // System.out.printf("Текущее количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastKey(), sizeToFreqSorted.lastEntry().getValue());
-
-                        int maxValue = 0;
-                        long maxKey = 0L;
-                        for (Long key : sizeToFreq.keySet()) {
-                            int currValue = sizeToFreq.get(key);
-                            if (maxValue < currValue) {
-                                maxValue = currValue;
-                                maxKey = key;
-                            }
-                        }
-                        System.out.printf("Текущее количество повторений %d (встретилось %d раз)\n", maxKey, maxValue);
+                        // инверсия, потому что мы ищем в TreeMap максимальное значение значения, а не ключа
+                        TreeMap<Long, Long> sizeToFreqSorted = new SizeToFreqSorted<>(getInversedMap());
+                        System.out.printf(
+                                "Текущее максимальное кол-во повторений %d (встретилось %d раз)%n",
+                                sizeToFreqSorted.lastEntry().getValue(), // сначала Value - как Ключ
+                                sizeToFreqSorted.lastEntry().getKey()); // затем Key - как Value
                     } catch (InterruptedException e) {
                         System.out.println(e.getMessage());
+                        break;
                     }
                 }
             }
@@ -55,7 +48,7 @@ public class Main {
         }
         printThread.interrupt();
 
-        TreeMap<Long, Integer> sizeToFreqSorted = new SizeToFreqSorted<>(sizeToFreq);
+        TreeMap<Long, Long> sizeToFreqSorted = new SizeToFreqSorted<>(sizeToFreq);
         System.out.println(sizeToFreqSorted);
         System.out.printf("Самое частое количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastKey(), sizeToFreqSorted.lastEntry().getValue());
     }
@@ -68,5 +61,14 @@ public class Main {
             route.append(letters.charAt(random.nextInt(letters.length())));
         }
         return route.toString();
+    }
+
+    // Метод инверсии, чтобы найти в TreeMap максимальное значение Значения, как последний узел дерева
+    private static Map<Long, Long> getInversedMap() {
+        Map<Long, Long> inversedMap = new HashMap<>();
+        for (Map.Entry<Long, Long> entry : sizeToFreq.entrySet()) {
+            inversedMap.put(entry.getValue(), entry.getKey());
+        }
+        return inversedMap;
     }
 }

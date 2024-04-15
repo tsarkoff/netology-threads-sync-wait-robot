@@ -50,7 +50,8 @@ public class Main {
 
         TreeMap<Long, Long> sizeToFreqSorted = new SizeToFreqSorted<>(sizeToFreq);
         System.out.println(sizeToFreqSorted);
-        System.out.printf("Самое частое количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastKey(), sizeToFreqSorted.lastEntry().getValue());
+        sizeToFreqSorted = new SizeToFreqSorted<>(getInversedMap());
+        System.out.printf("Самое частое количество повторений %d (встретилось %d раз)\n", sizeToFreqSorted.lastEntry().getValue(), sizeToFreqSorted.lastEntry().getKey());
     }
 
     // Метод генерации маршрута
